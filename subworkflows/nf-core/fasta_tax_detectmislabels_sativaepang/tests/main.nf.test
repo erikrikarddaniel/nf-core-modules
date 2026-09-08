@@ -1,0 +1,72 @@
+nextflow_workflow {
+
+    name "Test Subworkflow FASTA_TAX_DETECTMISLABELS_SATIVAEPANG"
+    script "../main.nf"
+    workflow "FASTA_TAX_DETECTMISLABELS_SATIVAEPANG"
+
+    tag "subworkflows"
+    tag "subworkflows_nfcore"
+    tag "subworkflows/fasta_tax_detectmislabels_sativaepang"
+    tag "raxmlng"
+    tag "raxmlng/search"
+    tag "sativaepang"
+    tag "sativaepang/reference"
+    tag "sativaepang/lootasks"
+    tag "sativaepang/looplace"
+    tag "sativaepang/looscore"
+
+    test("sativa-epang tiny example") {
+
+        when {
+            workflow {
+                """
+                input[0] = Channel.of([
+                    [ id:'test' ],
+                    file(params.modules_testdata_base_path + 'delete_me/sativaepang/sativaepang_tiny.phy', checkIfExists: true),
+                    file(params.modules_testdata_base_path + 'delete_me/sativaepang/sativaepang_tiny.tax', checkIfExists: true),
+                    'bac',
+                    'GTR+G'
+                ])
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success },
+                { assert workflow.out.mis.size() == 1 },
+                { assert workflow.out.phylogeny.size() == 1 }
+            )
+        }
+    }
+
+    test("gtdb archaea 16S") {
+
+        when {
+            workflow {
+                """
+                input[0] = Channel.of([
+                    [ id:'test' ],
+                    file(params.modules_testdata_base_path + 'delete_me/sativaepang/gtdb_archaea_16s_aligned.fasta', checkIfExists: true),
+                    file(params.modules_testdata_base_path + 'delete_me/sativaepang/gtdb_archaea_16s.tax', checkIfExists: true),
+                    'bac',
+                    'GTR+G'
+                ])
+                """
+            }
+        }
+
+        then {
+            // End-to-end through the real chain (RAxML-NG builds its own tree here,
+            // unlike the module-level tests which use a pre-built one): this dataset
+            // carries a deliberate positive control, DupHaloA/DupSulfoA, a swapped-label
+            // pair -- a real detection assertion, not just workflow.success.
+            def mis = path(workflow.out.mis[0][1]).text
+            assertAll(
+                { assert workflow.success },
+                { assert mis.contains("DupHaloA") },
+                { assert mis.contains("DupSulfoA") }
+            )
+        }
+    }
+}

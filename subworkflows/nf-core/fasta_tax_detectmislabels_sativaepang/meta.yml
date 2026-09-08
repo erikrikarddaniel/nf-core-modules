@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "fasta_tax_detectmislabels_sativaepang"
+description: |
+  Detect taxonomically mislabelled sequences: build a reference tree with RAxML-NG, then
+  run sativa-epang's staged leave-one-out (SATIVA with EPA-ng as the placement engine)
+  against it, one module per natural stage rather than a single monolithic tool call.
+keywords:
+  - phylogenetics
+  - taxonomy
+  - mislabelling
+  - placement
+  - leave-one-out
+  - raxml-ng
+  - epa-ng
+components:
+  - raxmlng/search
+  - sativaepang/reference
+  - sativaepang/lootasks
+  - sativaepang/looplace
+  - sativaepang/looscore
+input:
+  - ch_alignment_taxonomy:
+      type: file
+      description: |
+        Reference alignment, taxonomy, taxonomic code, and the RAxML-NG model to build
+        the reference tree under.
+        Structure: [ val(meta), path(alignment), path(taxonomy), val(taxcode), val(raxmlng_model) ]
+      pattern: "*.{fa,fasta,fna,phy,phylip}"
+output:
+  - mis:
+      type: file
+      description: |
+        Mislabelled sequences: one per line, with the rank at which the mislabelling was
+        detected, original and proposed taxonomy paths, confidence, and per-rank
+        confidence.
+        Structure: [ val(meta), path(mis) ]
+      pattern: "*.mis"
+  - phylogeny:
+      type: file
+      description: |
+        The RAxML-NG reference tree the leave-one-out was run against.
+        Structure: [ val(meta), path(tree) ]
+      pattern: "*.raxml.bestTree"
+authors:
+  - "@erikrikarddaniel"
+maintainers:
+  - "@erikrikarddaniel"
